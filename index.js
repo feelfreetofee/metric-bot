@@ -4,15 +4,18 @@ import {FormatStats} from './format'
 
 const metrics = new fivemetrics(Bun.env.API_KEY)
 
-function watchResource(resource, cb) {
+function watchResource(resource, cb, lastUpdated) {
     return metrics.getResource(resource).then(r => {
+        if (r.lastUpdated === lastUpdated)
+            return setTimeout(watchResource, Date.now() + 6e5, resource, cb, lastUpdated)
         cb(r)
         setTimeout(
             watchResource,
-            r.lastUpdated + 36e5 + 60e3 - Date.now(),
-            resource, cb
+            r.lastUpdated + 36e5 + 6e4 - Date.now(),
+            resource, cb, r.lastUpdated
         )
     })
+    .catch(e => setTimeout(watchResource, Date.now() + 6e5, resource, cb, lastUpdated))
 }
 
 watchResource('es_extended', function(r) {
